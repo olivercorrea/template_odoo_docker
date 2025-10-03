@@ -1,0 +1,61 @@
+services:
+  odooweb:
+    container_name: ${WEB_HOST}
+    image: ${WEB_IMAGE_NAME}
+    depends_on:
+      - dbpostgres
+    ports:
+      - "${WEB_PORT}:8069"
+      - "${WEBSOCKET_PORT}:8072"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./config:/etc/odoo
+      - ./addons-extra:/mnt/addons-extra
+      - ./addons-custom:/mnt/addons-custom
+      - ./addons-enterprise:/mnt/addons-enterprise
+    environment:
+      - USERMAP_UID=${USER_UID}
+      - USERMAP_GID=${USER_GID}
+    entrypoint: "/usr/bin/odoo -c /etc/odoo/odoo.conf"
+    networks:
+      - odoo-network
+
+  dbpostgres:
+    container_name: ${DB_HOST}
+    image: ${DB_IMAGE}
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data/pgdata
+    networks:
+      - odoo-network
+
+  pgadmin:
+    container_name: ${PGADMIN_HOST}
+    image: ${PGADMIN_IMAGE}
+    depends_on:
+      - dbpostgres
+    ports:
+      - "${PGADMIN_PORT}:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      # - PGADMIN_LISTEN_PORT=80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - odoo-network
+
+networks:
+  odoo-network:
+    driver: bridge
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:
+  pgadmin-data:
